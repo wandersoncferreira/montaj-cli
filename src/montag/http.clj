@@ -1,6 +1,7 @@
 (ns montag.http
   (:require [clj-http.lite.client :as client]
             [clojure.pprint :as pp]
+            [clojure.string :as cstr]
             [clojure.data.xml :refer [parse-str]])
   (:gen-class))
 
@@ -8,6 +9,8 @@
 
 (def goodreads-base-url (format "https://www.goodreads.com/search/index.xml?key=%s&q=" goodreads-key))
 
+(str goodreads-base-url "brave and true")
+;; => "https://www.goodreads.com/search/index.xml?key=AW8AqT4TtbKXk4MhION6tQ&q=brave and true"
 
 (defn- parse-single-book [book]
  (-> (for [[k, v] (map (juxt :tag :content) (:content book))
@@ -67,7 +70,7 @@
 
 (defmethod search [:goodreads :title]
   [_ _ book-name]
-  (let [url (str goodreads-base-url book-name)]
+  (let [url (str goodreads-base-url (cstr/replace book-name #" " "+"))]
     (-> url
         client/get
         :body
