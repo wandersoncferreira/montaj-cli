@@ -33,6 +33,14 @@
 
 (def common-parse (comp :content second :content))
 
+(defn- hide-long-strings [values]
+  (let [fmt (->> values
+                 (partition-all 85)
+                 (map (partial apply str)))]
+    (if (= (count fmt) 1)
+      (first fmt)
+      (str (first fmt) "...."))))
+
 (defrecord GoodReadsXML []
   BookSearch
   (max-hits [this] (-> this
@@ -56,7 +64,10 @@
                     (as-> ret (map parse-single-book ret))))
   (display [this] (let [ret (books this)]
                     (->> ret
-                         (map #(dissoc % :author_id :text_reviews_count))
+                         (map #(assoc %
+                                      :book_title (hide-long-strings (:book_title %))
+                                      :year (:original_publication_year %)))
+                         (map #(dissoc % :author_id :text_reviews_count :original_publication_year))
                          pp/print-table)))
   (user-choice [this] (do
                         (display this)
@@ -64,7 +75,6 @@
                         (println "Insert the book_id of the correct one: ")
                         (let [ret (read-line)]
                           (first (filter #(= (:book_id %) ret) (books this)))))))
-
 
 (defmulti search (fn [provider parameter args] [provider parameter]))
 
