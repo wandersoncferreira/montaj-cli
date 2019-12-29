@@ -38,6 +38,10 @@ name varchar(200)
 (defn make-row [& xs]
   (format "(%s)" (cstr/join ", " xs)))
 
+(defn ->integer [val]
+  (when-not (empty? val)
+    (biginteger val)))
+
 (defn- parse-book [book]
   (-> book
       (select-keys [:book_id :book_title :text_reviews_count :original_publication_year :author_id :average_rating])
@@ -48,8 +52,8 @@ name varchar(200)
                     :average_rating :average_rating
                     :original_publication_year :publication_year})
       (update :id biginteger)
-      (update :reviews_count biginteger)
-      (update :publication_year biginteger)
+      (update :reviews_count ->integer)
+      (update :publication_year ->integer)
       (update :author_id biginteger)
       (update :average_rating read-string)))
 
@@ -80,9 +84,20 @@ name varchar(200)
       (make-query "authors")
       execute-query))
 
+(defn- hide-long-strings [values]
+  (let [fmt (->> values
+                 (partition-all 70)
+                 (map (partial apply str)))]
+    (if (= (count fmt) 1)
+      (first fmt)
+      (str (first fmt) "...."))))
+
+(defn fmt-float [val]
+  (format "%.2f"  (read-string val)))
+
 (defmulti getter (fn [type params] [type params]))
 
-(def getter-query "select bk.id, title, reviews_count as reviews, publication_year, average_rating as rating, read, at.name as author
+(def getter-query "select bk.id, title, reviews_count as reviews, publication_year as year, average_rating as rating, read, at.name as author
 from books as bk inner join authors as at on bk.author_id=at.id")
 
 (defmethod getter [:book :all]
@@ -93,7 +108,9 @@ from books as bk inner join authors as at on bk.author_id=at.id")
                          (map #(cstr/split % #",")))]
     (->> parsed-data
          rest
-         (map #(zipmap (first parsed-data) %)))))
+         (map #(zipmap (first parsed-data) %))
+         (map #(assoc % "title" (hide-long-strings (get % "title"))
+                      "rating" (fmt-float (get % "rating")))))))
 
 (defmethod getter [:book :read]
   [_ _]
@@ -111,5 +128,14 @@ from books as bk inner join authors as at on bk.author_id=at.id")
 (defmethod updatter [:book :read]
   [_ _ bookid]
   (let [query (str "update books set read = 1 where id=" bookid)
+        ret (:out (execute-query query))]
+    ret))
+
+
+(defmulti deletter (fn [entity type params] [entity type]))
+
+(defmethod deletter [:book :id]
+  [_ _ bookid]
+  (let [query (str "delete from books where id=" bookid)
         ret (:out (execute-query query))]
     ret))

@@ -40,6 +40,15 @@
       "Data updated!"
       "Error")))
 
+(defmethod command :delete
+  [_ args banner]
+  (let [entity (keyword (last args))
+        type (keyword (last (pop args)))
+        params (first args)]
+    (if (empty? (database/deletter entity type params))
+      "Data deleted"
+      "Error")))
+
 (defn -main
   [& args]
   (let [[opts args banner] (cli args
@@ -48,7 +57,8 @@
                                 ["-r" "--register" "Provide portion of book name"]
                                 ["-g" "--getter" "Get a list of books saved in the system"
                                  :parse-fn #(keyword %)]
-                                ["-u" "--update" "Update the status of the entities"])]
+                                ["-u" "--update" "Update the status of the entities"]
+                                ["-d" "--delete" "Delete an entity"])]
     (database/create->tb-books)
     (database/create->tb-authors)
     (-> #(or (= (second %) true) (string? (second %)) (keyword? (second %)))

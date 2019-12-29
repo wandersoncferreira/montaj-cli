@@ -35,7 +35,7 @@
 
 (defn- hide-long-strings [values]
   (let [fmt (->> values
-                 (partition-all 85)
+                 (partition-all 70)
                  (map (partial apply str)))]
     (if (= (count fmt) 1)
       (first fmt)
