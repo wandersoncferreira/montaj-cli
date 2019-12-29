@@ -29,8 +29,16 @@ name varchar(200)
 );"]
     (execute-query query)))
 
+(defn clean-string
+  ([data]
+   (clean-string data ["," "#", "@", ";", "\\)", "\\("]))
+  ([data matchers]
+   (if (empty? matchers)
+     data
+     (recur (cstr/replace data (re-pattern (first matchers)) "") (rest matchers)))))
+
 (defn text-val [s]
-  (format "\"%s\"" s))
+  (format "\"%s\"" (clean-string s)))
 
 (defn int-val [i]
   (format "%s" i))
@@ -73,10 +81,10 @@ name varchar(200)
       (update :id biginteger)))
 
 (defn save->book [book]
-  (-> book
-      parse-book
-      (make-query "books")
-      execute-query))
+  (let [book-fmt (parse-book book)]
+    (-> book-fmt
+        (make-query "books")
+        execute-query)))
 
 (defn save->author [book]
   (-> book
@@ -93,7 +101,12 @@ name varchar(200)
       (str (first fmt) "...."))))
 
 (defn fmt-float [val]
-  (format "%.2f"  (read-string val)))
+  (try
+    (format "%.2f"  (read-string val))
+    (catch Throwable t
+      (println t)
+      (println val)
+      val)))
 
 (defmulti getter (fn [type params] [type params]))
 
