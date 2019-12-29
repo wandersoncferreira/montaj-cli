@@ -5,7 +5,7 @@
             [clojure.set :refer [rename-keys]])
   (:gen-class))
 
-(def db-name "db/database.sqlite")
+(def db-name (str (System/getenv "HOME") "/.montag/db/database.sqlite"))
 
 (defn execute-query [& args]
   (apply sh "sqlite3" "-quote" "-header" "-separator" " | " db-name args))
@@ -80,14 +80,36 @@ name varchar(200)
       (make-query "authors")
       execute-query))
 
-(defmulti getter (fn [type params] type))
+(defmulti getter (fn [type params] [type params]))
 
-(defmethod getter :books
+(def getter-query "select bk.id, title, reviews_count as reviews, publication_year, average_rating as rating, read, at.name as author
+from books as bk inner join authors as at on bk.author_id=at.id")
+
+(defmethod getter [:book :all]
   [_ _]
-  (let [ret (:out (execute-query "select * from books"))
+  (let [ret (:out (execute-query getter-query))
         parsed-data (->> (cstr/replace ret #"'" "")
                          (cstr/split-lines)
                          (map #(cstr/split % #",")))]
     (->> parsed-data
          rest
          (map #(zipmap (first parsed-data) %)))))
+
+(defmethod getter [:book :read]
+  [_ _]
+  (let [ret (:out (execute-query (str getter-query " where bk.read = 1")))
+        parsed-data (->> (cstr/replace ret #"'" "")
+                         (cstr/split-lines)
+                         (map #(cstr/split % #",")))]
+    (->> parsed-data
+         rest
+         (map #(zipmap (first parsed-data) %)))))
+
+
+(defmulti updatter (fn [entity type params] [entity type]))
+
+(defmethod updatter [:book :read]
+  [_ _ bookid]
+  (let [query (str "update books set read = 1 where id=" bookid)
+        ret (:out (execute-query query))]
+    ret))

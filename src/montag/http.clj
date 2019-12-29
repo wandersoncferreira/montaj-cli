@@ -8,6 +8,7 @@
 
 (def goodreads-base-url (format "https://www.goodreads.com/search/index.xml?key=%s&q=" goodreads-key))
 
+
 (defn- parse-single-book [book]
  (-> (for [[k, v] (map (juxt :tag :content) (:content book))
            :let [fmt-v (if (not= k :best_book) (first v)
@@ -55,7 +56,6 @@
                          (map #(dissoc % :author_id :text_reviews_count))
                          pp/print-table)))
   (user-choice [this] (do
-                        (println "We found the following titles: ")
                         (display this)
                         (println "\n \n")
                         (println "Insert the book_id of the correct one: ")
