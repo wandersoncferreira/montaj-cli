@@ -2,13 +2,18 @@
   (:require [clojure.java.shell :refer [sh]]
             [clojure.string :as cstr]
             [montag.http :refer :all :as http]
-            [clojure.set :refer [rename-keys]])
+            [clojure.set :refer [rename-keys]]
+            [clojure.pprint :as pp])
   (:gen-class))
 
 (def db-name (str (System/getenv "HOME") "/.montag/db/database.sqlite"))
+(def log-name (str (System/getenv "HOME") "/.montag/log/logger1.log"))
 
 (defn execute-query [& args]
-  (apply sh "sqlite3" "-quote" "-header" "-separator" " | " db-name args))
+  (let [ret (apply sh "sqlite3" "-quote" "-header" "-separator" " | " db-name args)]
+    (when-not (empty? (:err ret))
+      (spit log-name (str (:err ret) "\n" args)))
+    ret))
 
 (defn create->tb-books []
   (let [query "CREATE TABLE IF NOT EXISTS books (
@@ -29,9 +34,15 @@ name varchar(200)
 );"]
     (execute-query query)))
 
+; "create table if not exists notes (
+; book_id bigint,
+; note text,
+; tags"
+; TODO: sync command to read all files from folder
+
 (defn clean-string
   ([data]
-   (clean-string data ["," "#", "@", ";", "\\)", "\\("]))
+   (clean-string data ["," "#", "@", ";", "\\)", "\\(", "'", "\""]))
   ([data matchers]
    (if (empty? matchers)
      data
@@ -123,7 +134,8 @@ from books as bk inner join authors as at on bk.author_id=at.id")
          rest
          (map #(zipmap (first parsed-data) %))
          (map #(assoc % "title" (hide-long-strings (get % "title"))
-                      "rating" (fmt-float (get % "rating")))))))
+                      "rating" (fmt-float (get % "rating"))))
+         pp/print-table)))
 
 (defmethod getter [:book :read]
   [_ _]
@@ -133,8 +145,13 @@ from books as bk inner join authors as at on bk.author_id=at.id")
                          (map #(cstr/split % #",")))]
     (->> parsed-data
          rest
-         (map #(zipmap (first parsed-data) %)))))
+         (map #(zipmap (first parsed-data) %))
+         pp/print-table)))
 
+(defmethod getter [:book :count]
+  [_ _]
+  (let [ret (:out (execute-query "select count(*) from books"))]
+    (println (last (cstr/split-lines ret)))))
 
 (defmulti updatter (fn [entity type params] [entity type]))
 

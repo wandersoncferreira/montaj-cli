@@ -26,10 +26,7 @@
 
 (defmethod command :getter
   [_ args banner]
-  (let [ret (database/getter :book (last args))]
-    (if (empty? ret)
-      (println "No book found!")
-      (pp/print-table ret))))
+  (database/getter :book (last args)))
 
 (defmethod command :update
   [_ args banner]

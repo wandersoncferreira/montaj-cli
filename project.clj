@@ -7,7 +7,8 @@
                  [org.clojure/tools.cli "0.4.2"]
                  [org.martinklepsch/clj-http-lite "0.4.3"]
                  [cheshire "5.9.0"]
-                 [org.clojure/data.xml "0.0.8"]]
+                 [org.clojure/data.xml "0.0.8"]
+                 ]
   :main montag.core
   :profiles {:uberjar {:aot :all
                        :jvm-opts ["-Dclojure.compiler.direct-linking=true"
@@ -23,6 +24,7 @@
     "--initialize-at-build-time"
     "--enable-all-security-services"
     "--no-server"
+    "--no-fallback"
     "--allow-incomplete-classpath"
     "-Dfile.encoding=UTF-8"
     "-H:+AllowVMInspection"

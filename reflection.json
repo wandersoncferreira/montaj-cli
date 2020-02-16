@@ -29,6 +29,16 @@
     "allPublicFields" : true,
     "allPublicConstructors" : true
 }, {
+    "name" : "java.io.FileOutputStream",
+    "allPublicMethods" : true,
+    "allPublicFields" : true,
+    "allPublicConstructors" : true
+}, {
+    "name" : "java.io.OutputStreamWriter",
+    "allPublicMethods" : true,
+    "allPublicFields" : true,
+    "allPublicConstructors" : true
+}, {
     "name" : "java.io.ByteArrayOutputStream",
     "allPublicMethods" : true,
     "allPublicFields" : true,
