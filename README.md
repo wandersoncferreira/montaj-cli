@@ -5,8 +5,7 @@
 Ray Bradbury
 
 
-<img src="fahrenheit.jpg"
-title="books" align="left" padding="15px"/>
+<img src="fahrenheit.jpg" title="books" align="right" height="160px"/>
 <small>
 <br><br>
 
